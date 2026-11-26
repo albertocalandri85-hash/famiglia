@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Albero genealogico – Famiglia Calandri</title>
+<style>
+  :root{
+    --ink:#1f2328; --muted:#5f6670; --line:#9aa3ad; --bg:#faf8f4; --card:#ffffff;
+    --doc:#2f7d4f; --fam:#b7791f; --tbd:#8a8f98; --accent:#7a3e1d;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 Georgia,"Times New Roman",serif}
+  header{padding:28px 32px 8px}
+  h1{margin:0;font-size:28px;color:var(--accent);letter-spacing:.3px}
+  .sub{color:var(--muted);margin-top:4px}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0 0;font:13px system-ui,sans-serif;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:14px;height:14px;border-radius:3px;display:inline-block}
+  .sw.doc{border:2px solid var(--doc);background:#eef7f1}
+  .sw.fam{border:2px solid var(--fam);background:#fdf6e9}
+  .sw.tbd{border:2px dashed var(--tbd);background:#f3f3f3}
+  .gen-heads,.tree{display:grid;grid-template-columns:150px 62px 170px 62px 190px 62px 205px 62px 215px;column-gap:0}
+  .gen-heads{padding:14px 32px 4px;font:600 12px system-ui,sans-serif;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+  .wrap{overflow-x:auto;padding:0 32px 24px}
+  .tree{grid-template-rows:repeat(16,minmax(46px,auto));min-width:1180px}
+  .p{margin:3px 0;align-self:center;background:var(--card);border-radius:7px;padding:5px 9px;border:2px solid var(--doc);box-shadow:0 1px 2px rgba(0,0,0,.06);cursor:pointer;transition:box-shadow .15s,transform .15s}
+  .p:hover,.p.sel{box-shadow:0 2px 8px rgba(122,62,29,.25);transform:translateY(-1px)}
+  .p.sel{outline:2px solid var(--accent);outline-offset:1px}
+  .p.fam{border-color:var(--fam);background:#fffbf3}
+  .p.tbd{border:2px dashed var(--tbd);background:#f6f6f6;color:var(--muted)}
+  .p.m{border-left-width:5px}
+  .p.f{border-right-width:5px}
+  .n{font-weight:bold;font-size:14px;line-height:1.25}
+  .tree .p .d,.tree .p .src,.tree .p .note{display:none}
+  .s{font:11.5px/1.3 system-ui,sans-serif;color:var(--muted);margin-top:1px}
+  .tree .p[style*="grid-column:9"] .n{font-size:13px}
+  #det{position:fixed;top:0;right:0;bottom:0;width:400px;max-width:92vw;background:#fff;border-left:1px solid #ddd;box-shadow:-4px 0 16px rgba(0,0,0,.08);padding:20px 22px 30px;overflow-y:auto;transform:translateX(105%);transition:transform .2s;z-index:10}
+  #det.open{transform:none}
+  #det .x{position:absolute;top:10px;right:12px;border:0;background:none;font-size:22px;cursor:pointer;color:var(--muted)}
+  #det h3{margin:0 24px 8px 0;font-size:19px;color:var(--accent)}
+  #det .d,#det .src,#det .note{display:block;font-size:13.5px}
+  #det .src{margin-top:10px}
+  #det .note{margin-top:10px;padding:8px 10px;background:#fdf6e9;border-radius:6px}
+  .hint{font:13px system-ui,sans-serif;color:var(--muted);margin-top:8px}
+  .d{font:12.5px/1.45 system-ui,sans-serif;color:#30363d;margin-top:3px}
+  .d b{color:var(--ink)}
+  .src{font:11.5px system-ui,sans-serif;color:var(--muted);margin-top:4px}
+  .src a{color:var(--accent)}
+  .note{font:11.5px system-ui,sans-serif;color:#8a5a00;margin-top:4px}
+  .k{position:relative}
+  .k::before{content:"";position:absolute;left:0;right:50%;top:50%;border-top:2px solid var(--line)}
+  .k::after{content:"";position:absolute;left:50%;right:0;top:25%;bottom:25%;border:2px solid var(--line);border-right:none;border-radius:6px 0 0 6px}
+  .mar{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;background:#fff;border:1px solid var(--accent);border-radius:999px;padding:2px 7px;font:600 11px/1.3 system-ui,sans-serif;white-space:nowrap;color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.08);cursor:pointer}
+  .mar:hover{background:#fdf1e8}
+  .mar.tbd{color:var(--muted);border:1px dashed var(--tbd);background:#fafafa}
+  .mar .r{font-weight:600;color:var(--accent)}
+  section{padding:6px 32px 40px;max-width:1100px}
+  h2{font-size:19px;color:var(--accent);margin:26px 0 8px}
+  ol,ul{font:13.5px/1.55 system-ui,sans-serif;padding-left:22px}
+  li{margin:4px 0}
+  code{font-size:12px;background:#f0ece4;padding:1px 4px;border-radius:3px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Albero genealogico – Famiglia Calandri</h1>
+  <div class="sub">Rami Calandri · Giubergia · Borra · Sarzotti · Manassero — Bene Vagienna (CN) e dintorni. Aggiornato al 25 novembre 2026.</div>
+  <div class="legend">
+    <span><i class="sw doc"></i> confermato da documento letto (fonte citata)</span>
+    <span><i class="sw fam"></i> dato riferito dalla famiglia</span>
+    <span><i class="sw tbd"></i> da trovare / da verificare</span>
+    <span>⚭ = matrimonio · † = morte · ~ = data ricavata dall'età</span>
+  </div>
+  <div class="hint">Clicca su una persona o su un ⚭ per leggere i dettagli: atti, testimoni, fonti e racconti di famiglia.</div>
+</header>
+
+<div class="gen-heads">
+  <div>Tu e tua sorella</div><div></div><div>Genitori</div><div></div><div>Nonni</div><div></div><div>Bisnonni</div><div></div><div>Trisavoli</div>
+</div>
+
+<div class="wrap">
+<div class="tree">
+
+  <!-- ============ GENERAZIONE 1 ============ -->
+  <div style="grid-column:1;grid-row:1/17;display:flex;flex-direction:column;justify-content:center;gap:6px">
+    <div class="p fam m">
+      <div class="n">Alberto Calandri</div>
+      <div class="d">Figlio di Giovanni Calandri e Gemma Giovanna Sarzotti. Fratello di Isabella</div>
+    </div>
+    <div class="p fam f">
+      <div class="n">Isabella Calandri</div>
+      <div class="d">Figlia di Giovanni Calandri e Gemma Giovanna Sarzotti. Sorella di Alberto. Data e luogo di nascita da aggiungere</div>
+    </div>
+  </div>
+  <div class="k" style="grid-column:2;grid-row:1/17">
+    <div class="mar tbd"><span class="r">⚭ Giovanni Calandri & Gemma Giovanna Sarzotti</span><br>Data e luogo da aggiungere</div>
+  </div>
+
+  <!-- ============ GENERAZIONE 2: genitori ============ -->
+  <div class="p fam m" style="grid-column:3;grid-row:1/9">
+    <div class="n">Giovanni Calandri</div>
+    <div class="d"><b>Nato:</b> 1956, Bene Vagienna</div>
+  </div>
+  <div class="k" style="grid-column:4;grid-row:1/9">
+    <div class="mar"><span class="r">⚭ 25 novembre 1946, ore 10:30</span><br>Chiesa parrocchiale di San Michele, Bene Vagienna, rito cattolico<br><b>Celebrante:</b> parroco sac. don Luigi Capra<br>Trascritto il 27/11/1946 dall'ufficiale di stato civile Antonio Bellisio (delega 5/9/1946). Pubblicazioni civili: domeniche di novembre 1946 (l'ultima il 17), senza opposizioni<br><b>Testimoni:</b> non riportati nella trascrizione civile (sono nel registro della parrocchia)<br>Matrimoni 1946, parte II serie A, n. 67 [6]</div>
+  </div>
+
+  <div class="p fam f" style="grid-column:3;grid-row:9/17">
+    <div class="n">Gemma Giovanna Sarzotti</div>
+    <div class="d"><b>Nata:</b> 1958, Torino</div>
+  </div>
+  <div class="k" style="grid-column:4;grid-row:9/17">
+    <div class="mar tbd"><span class="r">⚭ Luigi Mario Sarzotti & Ottavia Manassero</span><br>Data da trovare. Non è negli indici dei matrimoni di Bene Vagienna 1952, 1953 e 1954 (gli ultimi online): quasi certamente dopo il 1954. Nel 1954 si sposa invece un'altra Ottavia Manassero, nata nel 1912: è la <b>zia</b> della nonna, sorella di Bernardo [24]</div>
+  </div>
+
+  <!-- ============ GENERAZIONE 3: nonni ============ -->
+  <div class="p m" style="grid-column:5;grid-row:1/5">
+    <div class="n">Bernardo Calandri</div>
+    <div class="d"><b>Nato:</b> 19 dicembre 1921, ore 10, Bene Vagienna, <b>frazione Santo Stefano</b><br>
+      Dichiarato in Comune il 20/12/1921 dal padre Stefano (36 anni, contadino). Testimone: un Manassero.<br>
+      Nel 1946: celibe, contadino, residente a Bene Vagienna</div>
+    <div class="src">Fonti [1] [6]</div>
+  </div>
+  <div class="k" style="grid-column:6;grid-row:1/5">
+    <div class="mar"><span class="r">⚭ 25 gennaio 1910 – Bene Vagienna</span><br>Matrimonio civile, atto n. 7 [4]. Pubblicazioni n. 50, affisse dal 19/12/1909, ricevute da Francesco Giario (lettura incerta), assessore delegato dal sindaco [3]<br><b>Celebrante e testimoni:</b> non leggibili online, perché la pagina dell'atto 7 manca dalla scansione</div>
+  </div>
+
+  <div class="p f" style="grid-column:5;grid-row:5/9">
+    <div class="n">Caterina Borra</div>
+    <div class="d"><b>Nata:</b> 10 settembre 1924, a Lequio. Nell'atto del 1946 è scritto "Bene Vagienna" perché in quegli anni Lequio era frazione di Bene Vagienna<br>
+      Nel 1946: nubile, 22 anni, casalinga, residente a Bene Vagienna<br>
+      Figlia di <b>Giovanni Borra</b> e di <b>Caterina Scapparone</b></div>
+    <div class="src">Fonte [6]</div>
+    <div class="note" style="color:#5f6670">L'ipotesi precedente (atto n. 24/1923, Caterina di Giorgio Borra) è <b>esclusa</b>: i genitori non corrispondono.</div>
+  </div>
+  <div class="k" style="grid-column:6;grid-row:5/9">
+    <div class="mar"><span class="r">⚭ 18 gennaio 1921 – Lequio Tanaro</span><br>Matrimonio civile in Casa comunale<br><b>Ufficiale:</b> Giacomo Boggetti, assessore supplente in assenza del sindaco<br><b>Testimoni:</b> Matteo Borra, 35 anni, agricoltore; Giuseppe Scapparone, 26 anni, agricoltore, entrambi di Lequio<br>Pubblicazioni: domeniche 26/12/1920 e 2/1/1921<br>Matrimoni 1921, atto n. 2 [7]</div>
+  </div>
+
+  <div class="p fam m" style="grid-column:5;grid-row:9/13">
+    <div class="n">Luigi Mario Sarzotti</div>
+    <div class="d"><b>Nato:</b> 11 settembre 1928, Bene Vagienna (frazione Pra, borgata Sarzotti)<br>Vivente. Atto di nascita non online: le nascite di Bene Vagienna su Antenati arrivano al 1924</div>
+  </div>
+  <div class="k" style="grid-column:6;grid-row:9/13">
+    <div class="mar"><span class="r">⚭ 21 gennaio 1905 – Bene Vagienna</span><br>Matrimonio civile in Casa comunale, ore 9:30<br><b>Ufficiale:</b> avv. Luigi Fenolio, sindaco<br><b>Testimoni:</b> Francesco Sarzotti fu Antonio, 34 anni, contadino (fratello dello sposo); Giuseppe Dogliani di Antonio, 29 anni, contadino (fratello della sposa)<br>Matrimoni 1905, atto n. 6 [15]</div>
+  </div>
+
+  <div class="p fam f" style="grid-column:5;grid-row:13/17">
+    <div class="n">Ottavia Manassero</div>
+    <div class="d"><b>Nata:</b> 1935, Bene Vagienna</div>
+  </div>
+  <div class="k" style="grid-column:6;grid-row:13/17">
+    <div class="mar"><span class="r">⚭ 3 febbraio 1925 – Bene Vagienna</span><br>Matrimonio civile in Casa comunale, ore 9:30<br><b>Ufficiale:</b> Antonio Gazzera, assessore in assenza del sindaco<br><b>Testimoni:</b> Francesco Fea, 40 anni, contadino; Antonio Gerbaudo, 42 anni, guardia comunale<br>Pubblicazioni: domeniche 18 e 25 gennaio 1925. I genitori dello sposo hanno dato il consenso<br>Matrimoni 1925, atto n. 8 [16]</div>
+  </div>
+
+  <!-- ============ GENERAZIONE 4: bisnonni ============ -->
+  <div class="p m" style="grid-column:7;grid-row:1/3">
+    <div class="n">Stefano Calandri</div>
+    <div class="d"><b>Nato:</b> 26 novembre 1885, ore 9:40, cantone Santo Stefano, Bene Vagienna<br>
+      <b>Mestiere:</b> contadino<br>
+      <b>†</b> ~1965–1970 nel bosco in loc. Basse, fraz. Santo Stefano (fumo delle sterpaglie, racconto di famiglia)</div>
+    <div class="src">Fonti [2] [3] [1]</div>
+  </div>
+  <div class="k" style="grid-column:8;grid-row:1/3">
+    <div class="mar"><span class="r">⚭ 1872 – Bene Vagienna</span><br>Matrimonio civile, ore 16, Ufficio dello stato civile<br>Sposo: Carlo Calandri, celibe, contadino, figlio di Bernardo e di Giuseppa Antonina (lettura incerta)<br>Sposa: Maria Bruno, nata a Bene Vagienna il 27 agosto 1853 (lettura probabile), contadina, nubile, figlia di Antonio e di Maria Morra<br><b>Testimoni:</b> Stefano Calandri di Bernardo, 32 anni, contadino (fratello dello sposo); Giuseppe Bruno di Matteo, contadino<br>Matrimoni 1872, atto n. 38 [19]. Scrittura molto difficile: data esatta e ufficiale da rileggere</div>
+  </div>
+
+  <div class="p f" style="grid-column:7;grid-row:3/5">
+    <div class="n">Antonina Agnese Giubergia</div>
+    <div class="d"><b>Nata:</b> ~1891–1892 (29 anni nel dic. 1921)<br>
+      Residente a Bene Vagienna, contadina. Figlia del fu Lorenzo e di Domenica</div>
+    <div class="src">Fonti [3] [1] [2]</div>
+  </div>
+  <div class="k" style="grid-column:8;grid-row:3/5">
+    <div class="mar"><span class="r">⚭ 25 novembre 1890 – Bene Vagienna</span><br>Casa comunale, ore 10:50<br><b>Ufficiale:</b> cav. Giuseppe Canavesio, sindaco<br>Sposo: Lorenzo Giubergia, <b>vedovo</b>, 50 anni, contadino, figlio del fu Antonio e della fu Antonina Gallo<br>Sposa: Domenica Deila (lettura probabile), nubile, 24 anni, contadina, figlia di Antonio e di Catterina Costamagna; non sapeva scrivere<br><b>Testimoni:</b> Gaspare Salomone, macellaio; Paolo Marengo, 52 anni, negoziante<br>Pubblicazioni: domeniche 9 e 16 novembre 1890<br>Matrimoni 1890, atto n. 43 [20]</div>
+  </div>
+
+  <div class="p m" style="grid-column:7;grid-row:5/7">
+    <div class="n">Giovanni Borra</div>
+    <div class="d"><b>Nato:</b> 30 marzo 1896, Lequio Tanaro. Agricoltore, residente a Lequio<br>
+      <b>†</b> annegato nel Tanaro, anno sconosciuto (racconto di famiglia)</div>
+    <div class="src">Fonti [7] [6]</div>
+  </div>
+  <div class="p f" style="grid-column:7;grid-row:7/9">
+    <div class="n">Caterina Scapparone</div>
+    <div class="d"><b>Nata:</b> 7 dicembre 1899, Bene Vagienna. Casalinga, residente a Lequio Tanaro</div>
+    <div class="src">Fonti [7] [6]</div>
+  </div>
+
+  <div class="p m" style="grid-column:7;grid-row:9/11">
+    <div class="n">Antonio Giusto Sarzotti</div>
+    <div class="d"><b>Nato:</b> 13 dicembre 1881, Bene Vagienna (data scritta con una correzione; l'età di 24 anni nel gennaio 1905 farebbe pensare al 1880) [15]<br>Padre di Luigi Mario. In famiglia "Giusto". Contadino, frazione Pra. Figlio del fu Antonio e della fu Ottavia Fea: entrambi i genitori erano già morti nel gennaio 1905 [15]<br>
+      Ipotesi molto forte: la figlia Caterina (nata nel 1910 in fraz. Pra, morta a Narzole) corrisponde alla sorella maggiore "sepolta a Narzole" ricordata in famiglia [12]<br>
+      Firmava "Sarzotti Antonio Giusto" [14]. Fratello maggiore: Francesco Sarzotti fu Antonio, nato verso il 1870, testimone alle sue nozze [15]<br>
+      <b>Figli trovati:</b> Caterina (27/6/1910) [12]; Antonio Secondino (26/8/1912, fraz. Pra; sposato con Anna Ravera a Narzole l'11/1/1947) [13]; <b>Francesco</b> (17/10/1914, fraz. Pra; sposato con Margherita Martini a Vernante il 29/4/1967; morto a Cuneo l'11/11/1996) [14]; Luigi Mario (11/9/1928)<br>
+      Nessun altro figlio nato a Bene Vagienna dal 1915 al 1924 (tutti i Sarzotti/Salzotti/Sarsotto controllati uno per uno). Gli altri fratelli di Luigi Mario sono quindi nati dal 1925 al 1927 (registri non online) o in un altro comune</div>
+    <div class="src">Fonti [12] [13] [14]</div>
+    <div class="note">Probabili fratelli di Giusto, tutti "fu Antonio" e contadini in frazione Pra: <b>Domenico</b> (moglie Antonietta Cavallero) e <b>Giuseppe</b> (moglie Lucia Cavallera). Esclusa l'ipotesi di Francesco Sarzotti fu Domenico e Maria Ferrero [8]</div>
+  </div>
+  <div class="p f" style="grid-column:7;grid-row:11/13">
+    <div class="n">Giovanna Dogliani</div>
+    <div class="d"><b>Nata:</b> 4 agosto 1882, Bene Vagienna [15]<br>Contadina. Figlia di Antonio Dogliani e di Catterina Ferrero, entrambi viventi nel 1905. Fratello: Giuseppe Dogliani, nato verso il 1875, testimone alle sue nozze. Probabile madre di Luigi Mario (da confermare con l'atto del 1928). La nipote Gemma <b>Giovanna</b> porta forse il suo nome</div>
+    <div class="src">Fonti [12] [15]</div>
+  </div>
+
+  <div class="p m" style="grid-column:7;grid-row:13/15">
+    <div class="n">Bernardo Manassero</div>
+    <div class="d"><b>Nato:</b> 27 settembre 1900, ore 1:10, Bene Vagienna, cantone Santo Stefano n. 38<br><b>Morto:</b> 28 gennaio 1983, Bene Vagienna<br>Contadino. Figlio di Giacomo Manassero e di Ottavia Ferrero. Padre di Ottavia. Aveva assolto gli obblighi di leva<br><b>Sorella:</b> Ottavia Manassero, nata a Bene Vagienna il 7/11/1912, sposata nell’ottobre 1954 con Alberto Saglia; riposa nella tomba di famiglia Manassero–Sarzotti–Saglia accanto alla nipote Ottavia [24]</div>
+    <div class="src">Fonti [16] [17] [24]</div>
+    <div class="note"><b>Racconto di famiglia:</b> fu il factotum dei Colombo, ricca famiglia di banchieri ebrei di Torino, proprietari di Villa Paradiso in frazione Santo Stefano. Durante la guerra li tenne nascosti per anni. Faceva credere che fossero nella casa al mare, si spediva da solo cartoline false, e a carabinieri e al messo comunale fascista (un certo Capra) rispondeva che erano via e non li vedeva da anni. Non ancora verificato su documenti</div>
+  </div>
+  <div class="p f" style="grid-column:7;grid-row:15/17">
+    <div class="n">Pelagia Gerbaudo</div>
+    <div class="d"><b>Nata:</b> 2 novembre 1902, Narzole<br>Contadina, residente a Bene Vagienna nel 1925. Figlia di Pietro Gerbaudo e di Maria Caterina Sarotto (lettura probabile). Madre di Ottavia. Firmava "Gerbaudi". L'atto di nascita non è consultabile: i registri di Narzole non sono sul Portale Antenati</div>
+    <div class="src">Fonte [16]</div>
+  </div>
+
+  <!-- ============ GENERAZIONE 5: trisavoli ============ -->
+  <div class="p m" style="grid-column:9;grid-row:1">
+    <div class="n">Carlo Calandri</div>
+    <div class="d">~1848 (37 anni nel nov. 1885), contadino. Figlio di <b>Bernardo Calandri</b> (vivo nel 1872, morto prima del 1885) e di Giuseppa Antonina (lettura incerta). Fratello: Stefano Calandri, nato verso il 1840</div>
+    <div class="src">Fonti [2] [19]</div>
+  </div>
+  <div class="p f" style="grid-column:9;grid-row:2">
+    <div class="n">Maria Bruno</div>
+    <div class="d">Nata a Bene Vagienna il 27 agosto 1853 (lettura probabile). Contadina. Figlia di <b>Antonio Bruno</b> e di <b>Maria Morra</b></div>
+    <div class="src">Fonti [2] [19]</div>
+  </div>
+  <div class="p m" style="grid-column:9;grid-row:3">
+    <div class="n">Lorenzo Giubergia</div>
+    <div class="d">Nato verso il 1840 (50 anni nel 1890). Contadino. Figlio del fu Antonio Giubergia e della fu Antonina Gallo. Vedovo quando sposò Domenica nel 1890. Già morto nel dicembre 1909</div>
+    <div class="src">Fonte [3]</div>
+  </div>
+  <div class="p f" style="grid-column:9;grid-row:4">
+    <div class="n">Domenica Deila</div>
+    <div class="d">Nata a Bene Vagienna verso il 1866 (24 anni nel 1890). Contadina. Figlia di Antonio Deila e di Catterina Costamagna. Cognome di lettura probabile (nell'atto "Desla/Deila"). Vivente nel dicembre 1909</div>
+    <div class="src">Fonte [3]</div>
+  </div>
+  <div class="p m" style="grid-column:9;grid-row:5"><div class="n">Matteo Borra</div><div class="d">Già morto nel gennaio 1921; era residente a Lequio Tanaro</div><div class="src">Fonte [7]</div></div>
+  <div class="p f" style="grid-column:9;grid-row:6"><div class="n">Caterina Masante (cognome incerto)</div><div class="d">Casalinga, vivente nel 1921 a Lequio Tanaro</div><div class="src">Fonte [7]</div></div>
+  <div class="p m" style="grid-column:9;grid-row:7"><div class="n">Giovenale Scapparone</div><div class="d">Agricoltore, vivente nel 1921 a Lequio Tanaro</div><div class="src">Fonte [7]</div></div>
+  <div class="p f" style="grid-column:9;grid-row:8"><div class="n">Antonia Botta</div><div class="d">Casalinga, vivente nel 1921 a Lequio Tanaro</div><div class="src">Fonte [7]</div></div>
+  <div class="p m" style="grid-column:9;grid-row:9"><div class="n">Antonio Sarzotti</div><div class="d">Padre di Antonio Giusto e di Francesco (~1870). Già morto nel gennaio 1905; era residente a Bene Vagienna. Date di nascita e di morte da trovare</div><div class="src">Fonti [14] [15]</div></div>
+  <div class="p f" style="grid-column:9;grid-row:10"><div class="n">Ottavia Fea</div><div class="d">Madre di Antonio Giusto. Già morta nel gennaio 1905; era residente a Bene Vagienna</div><div class="src">Fonte [15]</div></div>
+  <div class="p m" style="grid-column:9;grid-row:11"><div class="n">Antonio Dogliani</div><div class="d"><b>Nato:</b> 16 febbraio 1844, Narzole. Figlio del fu Giuseppe Dogliani e di Lucia Dogliani. Padre di Giovanna. Vivente nel 1910, residente a Bene Vagienna. Fu testimone alla nascita della nipote Caterina</div><div class="src">Fonti [12] [21]</div></div>
+  <div class="p f" style="grid-column:9;grid-row:12"><div class="n">Catterina Ferrero</div><div class="d"><b>Nata:</b> 6 giugno 1854, Fossano. Figlia di Pietro Ferrero e di Margherita Leprou (lettura incerta). Sposata a 17 anni a Cherasco. Madre di Giovanna Dogliani. Vivente nel gennaio 1905</div><div class="src">Fonti [15] [21]</div></div>
+  <div class="p m" style="grid-column:9;grid-row:13"><div class="n">Giacomo Manassero</div><div class="d">Nato a Bene Vagienna verso il 1862 (29 anni nel 1891, 38 nel 1900). Contadino, cantone Santo Stefano. Figlio del fu <b>Filippo</b> e di <b>Paola Vissio</b> (cognome di lettura incerta)</div><div class="src">Fonti [17] [18]</div></div>
+  <div class="p f" style="grid-column:9;grid-row:14"><div class="n">Ottavia Ferrero</div><div class="d">Nata a Bene Vagienna verso il 1869–70 (21 anni nel 1891). Contadina. Figlia del fu <b>Carlo Ferrero</b> e di <b>Maria Vaira</b></div><div class="src">Fonti [17] [18]</div></div>
+  <div class="p m" style="grid-column:9;grid-row:15"><div class="n">Pietro Gerbaudo</div><div class="d">Padre di Pelagia. Contadino, vivente nel 1925, residente a Bene Vagienna</div><div class="src">Fonte [16]</div></div>
+  <div class="p f" style="grid-column:9;grid-row:16"><div class="n">Maria Caterina Sarotto</div><div class="d">Madre di Pelagia (cognome di lettura probabile). Contadina, vivente nel 1925, residente a Bene Vagienna</div><div class="src">Fonte [16]</div></div>
+  <div class="k" style="grid-column:8;grid-row:5/7">
+    <div class="mar tbd"><span class="r">⚭ Matteo Borra & Caterina Masante</span><br>Matrimonio da trovare, prima del 1896 (nascita del figlio Giovanni a Lequio Tanaro). Non trovato: indici di Lequio Tanaro 1880–1885 e 1887–1894 controllati, nessuna Masante (il cognome stesso è di lettura incerta). Da controllare Lequio 1878–1879, 1886, 1895 e i comuni vicini</div>
+  </div>
+  <div class="k" style="grid-column:8;grid-row:7/9">
+    <div class="mar tbd"><span class="r">⚭ Giovenale Scapparone & Antonia Botta</span><br>Matrimonio da trovare, prima del 1899 (nascita della figlia Caterina a Bene Vagienna). Non trovato: nessuno Scapparone sposo nell'indice decennale di Bene Vagienna 1886–1895, né negli indici di Lequio 1887–1894. Il figlio Giuseppe aveva 26 anni nel 1921, quindi il matrimonio è probabilmente del 1890–1895, forse in un altro comune</div>
+  </div>
+  <div class="k" style="grid-column:8;grid-row:9/11">
+    <div class="mar tbd"><span class="r">⚭ Antonio Sarzotti & Ottavia Fea</span><br>Matrimonio da trovare, prima del 1870 circa (nascita del figlio Francesco). Non trovato negli indici decennali di Bene Vagienna 1866–1875 e 1876–1885 (nessuna Fea Ottavia). L'Antonio Salzotti sposato nel 1867 (atto 31) ha sposato una Costamagna. <b>Pista:</b> a Lequio Tanaro il 6/4/1880 un'Ottavia Fea di 20 anni, figlia di Costanzo, sposa Luigi Genesio di Cherasco (atto 14) [22]: potrebbe essere la stessa donna risposata, ma non è dimostrato. Forse Francesco (~1871) e Giusto (1881) sono figli di due mogli diverse</div>
+  </div>
+  <div class="k" style="grid-column:8;grid-row:11/13">
+    <div class="mar"><span class="r">⚭ gennaio 1872 – Cherasco</span><br>Celebrato a Cherasco (atto n. 13), trascritto a Bene Vagienna<br><b>Ufficiale:</b> cav. dott. Giuseppe Listone (lettura incerta), assessore anziano di Cherasco<br>Sposo: Antonio Dogliani, celibe, nato a <b>Narzole</b> il 16 febbraio 1844, residente a Bene Vagienna, figlio del fu Giuseppe e di Lucia Dogliani<br>Sposa: Catterina Ferrero, nubile, nata a <b>Fossano</b> il 6 giugno 1854, residente a Cherasco, figlia di Pietro e di Margherita Leprou (lettura incerta); non sapeva scrivere<br><b>Testimoni:</b> Pietro Ferrero fu Carlo, 42 anni; Antonio Costamagna fu Giacomo, 32 anni, agricoltori<br>Pubblicazioni a Cherasco e Bene Vagienna: domeniche 14 e 21 gennaio 1872<br>Matrimoni 1872 di Bene Vagienna, atto n. 18 [21]</div>
+  </div>
+  <div class="k" style="grid-column:8;grid-row:15/17">
+    <div class="mar tbd"><span class="r">⚭ Pietro Gerbaudo & Maria Caterina Sarotto</span><br>Matrimonio da trovare, prima del 1902 (nascita di Pelagia a Narzole). Se celebrato a Narzole non è online. A Bene Vagienna il 15/2/1894 (atto 14) un Pietro Gerbaudo, 22 anni, figlio di Agostino e di Catterina Giaccardi, sposa Maria Giaccardi fu Stefano [23]: la sposa non corrisponde a "Maria Caterina Sarotto", quindi probabilmente è un omonimo (oppure il cognome della madre di Pelagia è stato letto male nell'atto del 1925)</div>
+  </div>
+  <div class="k" style="grid-column:8;grid-row:13/15">
+    <div class="mar"><span class="r">⚭ 10 marzo 1891 – Bene Vagienna</span><br>Casa comunale, ore 10:25<br><b>Ufficiale:</b> nob. cav. uff. Faustino Monti di San Giorgio, assessore anziano delegato dal sindaco<br><b>Testimoni:</b> Giovenale Galetta, 66 anni, proprietario; Stefano Bortinaro (lettura incerta), 48 anni, capo guardia<br>Matrimoni 1891, atto n. 15 [18]</div>
+  </div>
+</div>
+</div>
+
+<section>
+  <h2>Fonti</h2>
+  <p style="font:13px system-ui,sans-serif;color:var(--muted)">Tutte le fonti vengono dall'Archivio di Stato di Cuneo, fondo <i>Stato civile italiano</i>, consultate sul Portale Antenati. I registri di stato civile non hanno un numero di protocollo: si citano anno, tipo di registro, numero d'atto (parte/serie) e numero d'immagine. Il link apre la pagina esatta.</p>
+  <ol>
+    <li><b>[1]</b> Bene Vagienna, <b>Nati 1921</b>, parte I, <b>atto n. 169</b> (Calandri Bernardo di Stefano), registro segnatura 2360 — immagine 116 di 138:
+      <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua37908128/5vPerJp">apri</a>. Indice annuale all'immagine 133: <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua37908128/Lp4raBq">apri</a>.</li>
+    <li><b>[2]</b> Bene Vagienna, <b>Nati 1885</b>, <b>atto n. 246</b> (Calandri Stefano di Carlo), con annotazione a margine del matrimonio del 25-1-1910 con Giubergia Antonina Agnese — immagine 85 di 101:
+      <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua15386964/LDOBNNO">apri</a>. Indice all'immagine 98: <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua15386964/02ndKKG">apri</a>.</li>
+    <li><b>[3]</b> Bene Vagienna, <b>Matrimoni – pubblicazioni 1909</b>, parte I, <b>n. 50</b> (Calandri Stefano di Carlo e di Bruno Maria; Giubergia Antonina del fu Lorenzo e di Domenica), prima affissione domenica 19 dicembre 1909 — immagine 56 di 86:
+      <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua37902783/03RON2R">apri</a>.</li>
+    <li><b>[4]</b> Bene Vagienna, <b>Matrimoni 1910</b>, indice annuale: "Calandri Stefano – Giubergia Antonina", <b>atto n. 7</b> — immagine 56 di 58:
+      <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua37900453/wE8Aybq">apri</a>. <i>Nota: le pagine degli atti 7 e 8 non sono nella scansione online (si passa dall'atto 6 al 9). Per una copia dell'atto completo si può scrivere al Comune di Bene Vagienna o all'Archivio di Stato di Cuneo.</i></li>
+    <li><b>[5]</b> Bene Vagienna, <b>Nati 1923</b>, <b>atto n. 24</b> (Borra Caterina di Giorgio) — immagine 19 di 118:
+      <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua37908195/Lp4r1M1">apri</a>. Indice all'immagine 114: <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua37908195/5BEBAN9">apri</a>. <i>Non ancora collegata con certezza a nonna Caterina.</i></li>
+    <li><b>[6]</b> Bene Vagienna, <b>Matrimoni 1946</b>, <b>parte II serie A, atto n. 67</b> (trascrizione del matrimonio religioso Calandri Bernardo – Borra Caterina) — immagine 74 di 110:
+      <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua37901559/wjnx8rO">apri</a>. Indice annuale all'immagine 105: <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua37901559/LPO1yAY">apri</a>.</li>
+    <li><b>[7]</b> Lequio Tanaro, <b>Matrimoni 1921</b>, parte I, <b>atto n. 2</b> (Borra Giovanni – Scapparone Catterina) — immagine 4 di 39:
+      <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua37900874/04Kg92R">apri</a>.</li>
+    <li><b>[8]</b> Bene Vagienna, <b>Nati 1908</b>, <b>atto n. 10</b> (Sarzotti Maria Giuseppina di Francesco). Dichiarata il 19/01/1908 davanti al sindaco geom. Pietro Sica. Testimoni: Bernardo Calandri del fu Giovanni, 59 anni, agricoltore, e Bartolomeo Sampò del fu Giovanni Maria, falegname. Nota a margine: matrimonio con Giacomo Ferrua l'8/6/1946 a Bene Vagienna (Matrimoni 1946, parte II serie A, n. 47). Immagine 10 di 164:
+      <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua37907688/wlEDK6m">apri</a>. Indice all'immagine 161: <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua37907688/wQ6OaM8">apri</a>.</li>
+    <li><b>[9]</b> Bene Vagienna, <b>Matrimoni 1889</b>, <b>atto n. 13</b>, 7 marzo 1889, ore 16:50, Casa comunale. Ufficiale: cav. Giuseppe Canavesio (lettura probabile), assessore anziano facente funzione di sindaco. Sposo: Sarzotti Francesco, celibe, 22 anni, contadino, nato a Bene Vagienna, figlio del fu Domenico e di Carolina Solaro. Sposa: Ferrero Maria, vedova, 20 anni, contadina, nata a Cherasco (correzione nel testo), figlia del vivente Giorgio e di Paola Magnaldi. Testimoni: Giovenale Galetta, 64 anni, proprietario; Giovanni Revelli, 80 anni, agente comunale. Pubblicazioni: domeniche 24 febbraio e 3 marzo 1889. Immagine 12 di 34:
+      <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua15386887/04EdqyQ">apri</a>. Indice decennale dei matrimoni 1886–1895, immagine 16: <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua15386902/w1lZ4bp">apri</a>.</li>
+    <li><b>[10]</b> Bene Vagienna, <b>Matrimoni 1946</b>, <b>parte II serie A, atto n. 47</b>. Trascrizione del matrimonio religioso dell'8/6/1946, ore 10:30, chiesa parrocchiale di Maria SS. Assunta, Bene Vagienna, celebrante il parroco don Gio Battista Cervella; trascritto il 10/6/1946. Sposo: Giacomo Ferrua, celibe, 33 anni, contadino, nato a Fossano il 6/12/1912, residente a Bene Vagienna, figlio di Giorgio e della fu Caterina Perucca. Sposa: Maria Giuseppina Sarzotti, nubile, 38 anni, casalinga, nata a Bene Vagienna il 15/1/1908, residente a Bene Vagienna, figlia di Francesco (vivente) e della fu Maria Ferrero. Immagine 54 di 110:
+      <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua37901559/w6J7b6b">apri</a>.</li>
+    <li><b>[11]</b> Bene Vagienna, <b>Nati 1917</b>, <b>atto n. 66</b> (Sarsotto Francesco di Pietro), nato il 30/7/1917 alle 4 in <b>frazione Pra</b>, dichiarato il 31/7/1917 davanti al segretario delegato Valentino Bessone. Padre: Pietro Sarsotto del fu Domenico, 38 anni, contadino. Madre: Palmina Gallo del fu Giuseppe, 30 anni, casalinga. Testimoni: Antonio Grosso fu Paolo, 59 anni, e Giovanni Gallesio fu Pietro Antonio, 59 anni, contadini. Nota a margine: morto a <b>Torino</b> il 14/12/1963 (atti di morte Torino 1963, parte II serie B n. 2970). Immagine 47 di 106:
+      <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua37907992/LN1Bk3o">apri</a>. Indice all'immagine 103: <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua37907992/5KqBEd6">apri</a>.</li>
+    <li><b>[12]</b> Bene Vagienna, <b>Nati 1910</b>, <b>atto n. 95</b> (Sarzotti Catterina di Antonio Giusto). Nata il 27/6/1910 alle 17 in <b>frazione Pra</b>, dichiarata il 29/6/1910 alle 10:15 davanti a Leonardo Dalmazzo, sostituto segretario comunale delegato. Padre: Antonio Giusto Sarzotti, 28 anni, contadino (sapeva firmare). Madre: Giovanna Dogliani di Antonio, 27 anni, contadina. Testimoni: Antonio Dogliani, 66 anni (il nonno materno), e Marianna Borra, contadina. Note a margine: sposata con <b>Giorgio Ravera</b> a Bene Vagienna nel 1930 (parte II, atto n. 24); <b>morta a Narzole il 9/12/1949</b> (atti di morte Narzole 1949, n. 32). Immagine 66 di 146:
+      <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua37907753/wlEDeKm">apri</a>. Indice annuale all'immagine 145: <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua37907753/LzODbOm">apri</a>.</li>
+    <li><b>[13]</b> Bene Vagienna, <b>Nati 1912</b>, <b>atto n. 118</b> (Sarzotti Antonio Secondino di Antonio Giusto). Nato il 26/8/1912 alle 19:30 in <b>frazione Pra</b>, dichiarato il 27/8/1912 davanti al segretario delegato Valentino Bessone. Padre: Antonio Giusto Sarzotti, 30 anni, contadino. Madre: Giovanna Dogliani, 29 anni, contadina. Testimoni: Luigi Ferrero, 37 anni, maestro comunale, e Stefano Manassero, 59 anni, geometra. Nota a margine: sposato con Anna Ravera a Narzole l'11/1/1947. <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua37907820/">Registro Nati 1912</a>, immagine 83 di 156.</li>
+    <li><b>[14]</b> Bene Vagienna, <b>Nati 1914</b>, <b>atto n. 156</b> (Sarzotti Francesco di Antonio). Nato il 17/10/1914 alle 7:20 in <b>frazione Pra</b>, dichiarato il 20/10/1914 alle 10:50 davanti al segretario delegato Valentino Bessone. Padre: Antonio Sarzotti <b>fu Antonio</b>, 33 anni, contadino (firma "Sarzotti Antonio Giusto"). Madre: Giovanna Dogliani di Antonio, 30 anni, contadina. Testimoni: Michele Oreglia, 44 anni, messo comunale, e Giuseppe Manassero, 26 anni, impiegato. Note a margine: sposato con <b>Margherita Martini</b> a <b>Vernante</b> il 29/4/1967 (Vernante 1967, parte II serie A n. 6); <b>morto a Cuneo l'11/11/1996</b> (atto n. 773, parte II serie B). Immagine 116 di 152:
+      <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua37907890/0MrB97l">apri</a>. Indice annuale all'immagine 7.</li>
+    <li><b>[15]</b> Bene Vagienna, <b>Matrimoni 1905</b>, <b>parte I, atto n. 6</b> (Sarzotto Antonio Giusto e Dogliani Giovanna). 21 gennaio 1905 (la data "diciannove" è cancellata e corretta in "ventun"), ore 9:30, Casa comunale. Ufficiale: avv. Luigi Fenolio, sindaco. Sposo: Antonio Giusto Sarzotto, celibe, 24 anni, contadino, nato a Bene Vagienna il 13/12/1881 (lettura con correzione), figlio del fu Antonio e della fu Ottavia Fea, già residenti a Bene Vagienna. Sposa: Giovanna Dogliani, nubile, 22 anni, contadina, nata a Bene Vagienna il 4/8/1882, figlia di Antonio e di Catterina Ferrero, residenti a Bene Vagienna. Testimoni: Francesco Sarzotti fu Antonio, 34 anni, contadino; Giuseppe Dogliani di Antonio, 29 anni, contadino. Documenti: certificato delle pubblicazioni ed estratti degli atti di morte dei genitori dello sposo. Immagine 10 di 73 del registro (pagina 5):
+      <a href="https://iiif-antenati.cultura.gov.it/iiif/2/wOVXxXZ/full/full/0/default.jpg">immagine</a>.</li>
+    <li><b>[16]</b> Bene Vagienna, <b>Matrimoni 1925</b>, <b>parte I, atto n. 8</b> (Manassero Bernardo e Gerbaudo Pelagia). 3 febbraio 1925, ore 9:30, Casa comunale. Ufficiale: Antonio Gazzera, assessore in assenza del sindaco. Sposo: Bernardo Manassero, celibe, 24 anni, contadino, nato a Bene Vagienna il 27/9/1900, figlio di Giacomo, contadino, e di Ottavia Ferrero, contadina, residenti a Bene Vagienna. Sposa: Pelagia Gerbaudo, nubile, 22 anni, contadina, nata a Narzole il 2/11/1902, residente a Bene Vagienna, figlia di Pietro, contadino, e di Maria Caterina Sarotto (lettura probabile). Testimoni: Francesco Fea, 40 anni, contadino; Antonio Gerbaudo, 42 anni, guardia comunale. Pubblicazioni: domeniche 18 e 25 gennaio 1925, senza opposizioni. I genitori dello sposo hanno dato il consenso; lo sposo aveva assolto gli obblighi di leva. Immagine 10 di 79:
+      <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua37901004/LmaX3GR">apri</a>. Indice annuale all'immagine 76: <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua37901004/0Aoj9XN">apri</a>.</li>
+    <li><b>[17]</b> Bene Vagienna, <b>Nati 1900</b>, <b>atto n. 174</b> (Manassero Bernardo di Giacomo). Nato il 27/9/1900 alle 1:10 in cantone Santo Stefano n. 38, dichiarato il 28/9/1900 alle 8:55 davanti ad Alberto Galetta, sostituto segretario delegato. Padre: Giacomo Manassero, 38 anni, contadino. Madre: Ottavia Ferrero fu Carlo, 31 anni, contadina, nata e residente a Bene Vagienna. Testimoni: Pietro Marengo, 45 anni, contadino, e Domenico Ferrero, 40 anni, muratore. Note a margine: matrimonio con Pelagia Gerbaudo il 3/2/1925 (1925, parte I, n. 8); <b>morto a Bene Vagienna il 28/1/1983</b> (atto n. 5, parte I). Immagine 127 di 190:
+      <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua37907424/Lo8DOJm">apri</a>. Indice annuale all'immagine 7.</li>
+    <li><b>[18]</b> Bene Vagienna, <b>Matrimoni 1891</b>, <b>atto n. 15</b> (Manassero Giacomo e Ferrero Ottavia). 10 marzo 1891, ore 10:25, Casa comunale. Ufficiale: nob. cav. uff. Faustino Monti di San Giorgio, assessore anziano delegato dal sindaco. Sposo: Giacomo Manassero, celibe, 29 anni (lettura probabile), contadino, nato e residente a Bene Vagienna, figlio del fu Filippo e di Paola Vissio (lettura incerta). Sposa: Ottavia Ferrero, nubile, 21 anni, contadina, nata e residente a Bene Vagienna, figlia del fu Carlo e di Maria Vaira. Testimoni: Giovenale Galetta, 66 anni, proprietario; Stefano Bortinaro (lettura incerta), 48 anni, capo guardia. Pubblicazioni: domeniche 22 febbraio e 1 marzo 1891. Firmano entrambi gli sposi. Immagine 10 di 42:
+      <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua15386889/w1lN8Rr">apri</a>. Trovato tramite l'indice decennale dei matrimoni 1886–1895 (immagini 9 e 12).</li>
+    <li><b>[19]</b> Bene Vagienna, <b>Matrimoni 1872</b>, <b>atto n. 38</b> (Calandri Carlo e Bruno Maria). Atto manoscritto di difficile lettura. Sposo: Carlo Calandri, celibe, contadino, figlio di Bernardo e di Giuseppa Antonina (lettura incerta). Sposa: Maria Bruno, nubile, contadina, nata a Bene Vagienna il 27/8/1853 (lettura probabile), figlia di Antonio e di Maria Morra. Testimoni: Stefano Calandri di Bernardo, 32 anni, contadino; Giuseppe Bruno di Matteo, contadino. Registro Matrimoni 1872 (an_ua15386870), immagini 34–35 di 61:
+      <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua15386870/wRE6NZe">apri</a>. Indice decennale 1866–1875, immagine 6.</li>
+    <li><b>[20]</b> Bene Vagienna, <b>Matrimoni 1890</b>, <b>atto n. 43</b> (Giubergia Lorenzo e Deila Domenica). 25/11/1890, ore 10:50, Casa comunale. Ufficiale: cav. Giuseppe Canavesio, sindaco. Sposo: Lorenzo Giubergia, vedovo, 50 anni, contadino, nato e residente a Bene Vagienna, figlio del fu Antonio e della fu Antonina Gallo. Sposa: Domenica Deila (lettura probabile), nubile, 24 anni, contadina, nata e residente a Bene Vagienna, figlia del vivente Antonio e di Catterina Costamagna. Testimoni: Gaspare Salomone, macellaio (età corretta nel testo); Paolo Marengo, 52 anni, negoziante. Pubblicazioni: 9 e 16 novembre 1890. La sposa non sapeva scrivere. Immagine 24 di 44:
+      <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua15386888/La7DV1D">apri</a>.</li>
+    <li><b>[21]</b> Bene Vagienna, <b>Matrimoni 1872</b>, <b>atto n. 18</b> (Dogliani Antonio e Ferrero Catterina): trascrizione dell'atto n. 13 di Cherasco del gennaio 1872. Sposo: Antonio Dogliani, celibe, nato a Narzole il 16/2/1844, residente a Bene Vagienna, figlio del fu Giuseppe e di Lucia Dogliani. Sposa: Catterina Ferrero, nubile, nata a Fossano il 6/6/1854, residente a Cherasco con i genitori, figlia dei viventi Pietro e Margherita Leprou (lettura incerta), agricoltori. Testimoni: Pietro Ferrero fu Carlo, 42 anni, e Antonio Costamagna fu Giacomo, 32 anni, agricoltori di Cherasco. Pubblicazioni a Cherasco e a Bene Vagienna le domeniche 14 e 21 gennaio. La sposa non sapeva scrivere. Immagine 19 di 61:
+      <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua15386870/0AOno99">apri</a>.</li>
+    <li><b>[22]</b> Lequio Tanaro, <b>Matrimoni 1880</b> (registro 441.5), <b>atto n. 14</b> (Genesio Luigi e Fea Ottavia). 6/4/1880, davanti al sindaco Stefano Boggetti. Sposo: Luigi Genesio, 29 anni, agricoltore, nato a Cavallermaggiore, residente a Cherasco, figlio di Antonio e della fu Maria Brizio. Sposa: Ottavia Fea, 20 anni, contadina, nata e residente a Lequio Tanaro, figlia di Costanzo e della fu Francesca Genesio. Solo una pista per la madre di Antonio Giusto Sarzotti, non una prova. Immagine 18 di 38:
+      <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua36086841/0n3G67n">apri</a>.</li>
+    <li><b>[23]</b> Bene Vagienna, <b>Matrimoni 1894</b>, <b>atto n. 14</b> (Gerbaudo Pietro e Giaccardi Maria). 15/2/1894. Sposo: Pietro Gerbaudo, celibe, 22 anni, agricoltore, figlio del vivente Agostino e di Catterina Giaccardi. Sposa: Maria Giaccardi, nubile, 20 anni, figlia del fu Stefano e della fu Maria Barbero. Probabilmente un omonimo del padre di Pelagia: da verificare. Immagine 8 di 50:
+      <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua15386892/wOl1zeG">apri</a>.</li>
+    <li><b>[24]</b> Bene Vagienna, <b>Matrimoni 1954</b>, <b>parte II serie A, atto n. 22</b> (Saglia Alberto e Manassero Ottavia). Trascrizione del matrimonio religioso di ottobre 1954 (giorno di lettura incerta, forse il 17), ore 9, chiesa parrocchiale di Maria SS. Assunta, celebrante il parroco don Giovanni Battista Cervella; trascritto il 25/10/1954 da Antonio Bellisio. Sposo: Alberto Saglia, celibe, 38 anni, seminatore (lettura probabile), nato a Casalgrasso il 30/5/1916, figlio del fu Pietro e della fu Domenica Calosrita (lettura incerta). Sposa: Ottavia Manassero, nubile, 41 anni, casalinga, nata a Bene Vagienna il 7/11/1912, residente a Carignano, figlia del fu Giacomo (nel testo "Filippo" è cancellato e corretto in "Giacomo") e della fu Ottavia Ferrero. Pubblicazioni a Casalgrasso e Carignano. Immagine 29 di 66:
+      <a href="https://antenati.cultura.gov.it/ark:/12657/an_ua37901833/wr26vbp">apri</a>.</li>
+  </ol>
+
+  <h2>Verifiche già fatte (risultato negativo)</h2>
+  <ul><li><b>Figli di Antonio Giusto Sarzotti, Bene Vagienna 1910–1924: ricerca completata.</b> Aperti uno per uno tutti gli atti Sarzotti/Salzotti/Sarsotto. Trovati: Caterina 1910 [12], Antonio Secondino 1912 [13], Francesco 1914 [14]. Tutti gli altri sono di altre famiglie:
+      1911: Antonio 128 (di Antonio fu Antonio e Anna Blua), Lucia 160 (di Antonio e Agata Grisotti);
+      1912: Carolina 181 (di Giovanni);
+      1913: Giuseppe 8 (di Bartolomeo e Marianna Borra, fraz. Pra), Margherita Paola Sarsotto 27 (di Paolo, fabbro), Caterina 129 (di Domenico e Antonia Cavallero, fraz. Pra), Rosa 146 (di Pietro), Francesco Michele Antonio 153 (di Antonio, 54 anni, e Maddalena Demarchi, fraz. Isola);
+      1914: Michele Marco Sarsotto 140 (di Paolo); Lodovica 42, Lucia 122, Francesca Sarsotto 22 (nate tra febbraio e agosto, incompatibili con la nascita di Francesco in ottobre);
+      1915: Lucia 162 (di Domenico fu Antonio e Antonietta Cavallero); Giuseppe 51 e Lodovica Salzotti 73 (incompatibili per data);
+      1916: Caterina 50 (di Bruno), Lodovina 33 (di Giovanni);
+      1917: Andrea Mario 11 (di Antonio e Anna Blua), Michelangelo 31 (di Giuseppe e Lucia Cavallera), Francesco 66 (di Pietro e Palmina Gallo), Rosa 98 (di Antonio e Agata Grisotti);
+      1918: Bartolomeo 84 (di Domenico fu Antonio);
+      1919: Paola Sarzotto 74 (di Paolo);
+      1920: Domenico Salzotti 14 (di Domenico fu Domenico), Pietro Giuseppe/Rosa Giuseppina 43 (di Giuseppe fu Antonio), Antonio Salzotti 80 (di Domenico, falegname), Caterina Maria 86 (di Antonio fu Domenico e Agata Grisotti), Domenica 94 (di Antonio fu Giuseppe e Margherita Dompé), Antonietta 128 (famiglia di Domenico);
+      1921: Domenica Salzotti 131 (di Domenico, falegname);
+      1922: Margherita 74 (di Giuseppe e Anna Maria Manassero), Anna 75 (di Antonio fu Giuseppe e Margherita Dompé), Giuseppe Francesco 127 (di Giuseppe fu Antonio);
+      1923: Carolina Lucia 65 (di Antonio fu Domenico e Agata Grisotti), Giovanni 76 (di Gio Battista), Maria Anna 144 (di Michele fu Alfonso);
+      1924: Margherita Maria 93 (di Giovenale).
+      Nota: in quegli anni a Bene Vagienna vivevano almeno quattro Antonio Sarzotti diversi (fu Antonio = il nostro; fu Domenico, sposato con Agata Grisotti; fu Giuseppe, sposato con Margherita Dompé; il marito di Anna Blua).</li></ul>
+  <ul><li><b>Francesco Sarzotti, fratello maggiore di nonno Luigi:</b> trovato, è nato nel 1914, non verso il 1924 [14].</li>
+  <li><b>Morte di Giovanni Borra (annegato nel Tanaro):</b> non è nei registri dei morti di Lequio Tanaro 1947–1954 (indici controllati). I registri successivi al 1954 non sono online.</li>
+  <li><b>Giusto Sarzotti, ricerche senza esito:</b> nessun "Giusto" negli indici decennali delle nascite di Bene Vagienna 1876–1885 e 1886–1895, né negli indici dei matrimoni 1895, 1897, 1919–1924. Il cognome compare anche come Sarsotti, Sarsotto, Salzotti, Salzotto. Sarzotti esclusi: Giuseppe (sposato nel 1921 con Anna Maria Manassero, atto 43, nato nel 1895: troppo giovane); Antonio, Gio Battista (1920); Giovenale, Michele, Gio Battista (1923).</li>
+  <li>Prima di trovare l'atto del 1921 ho controllato senza risultato: Lequio Tanaro, indici dei matrimoni 1912–1920 e 1922–1923; Bene Vagienna, indici 1919–1924.</li>
+  <li>Bene Vagienna, Nati 1923, atto n. 24 (Caterina di Giorgio Borra e Teresa Ansaldi) [5]: <b>non è la nonna</b>, perché i genitori non corrispondono a quelli dell'atto del 1946.</li></ul>
+  <ul>
+    <li>Bene Vagienna, Nati 1921, atto n. 39: <i>Borra Caterina Giuseppina di Giacomo</i>. Annotazione a margine: sposata con un <b>Pietro</b>, quindi non è la nonna.</li>
+    <li>Lequio Tanaro, indici delle nascite 1922 e 1923: nessuna Caterina Borra. Il registro delle nascite di Lequio del 1924 non è online.</li>
+    <li>Bene Vagienna, indice dei matrimoni 1945: nessun Calandri Bernardo (ci sono solo Calandri Carlo e Calandri Lorenzo).</li>
+  </ul>
+
+  <h2>Cosa resta da fare</h2>
+  <ul>
+    <li>Trovare il <b>matrimonio di Bernardo Calandri e Caterina Borra</b> negli indici 1946–1954. Conferma i genitori di Caterina.</li>
+    <li>Sposati nel gennaio 1905, ma il primo figlio trovato è del 1910: controllare le <b>nascite di Bene Vagienna 1905–1909</b> per altri figli di Antonio Giusto e Giovanna.</li>
+    <li>Nascita di <b>Pelagia Gerbaudo</b> (Narzole, 2/11/1902): i registri di Narzole non sono online; servirebbe il Comune di Narzole o l'archivio parrocchiale.</li>
+    <li>Trovare i matrimoni di <b>Carlo Calandri e Maria Bruno</b> (~1870–1884) e di <b>Lorenzo Giubergia e Domenica</b>: si risale alla generazione dei quintavoli (es. Bernardo Calandri, Antonio Bruno).</li>
+    <li>Richiedere al Comune di Bene Vagienna l'<b>atto di morte di Stefano Calandri</b> (~1965–1970).</li>
+  </ul>
+</section>
+
+<aside id="det"><button class="x" aria-label="Chiudi">×</button><div id="detBody"></div></aside>
+<script>
+(function(){
+  var S={
+    "Alberto Calandri":"tu",
+    "Isabella Calandri":"sorella",
+    "Giovanni Calandri":"n. 1956 · Bene Vagienna",
+    "Gemma Giovanna Sarzotti":"n. 1958 · Torino",
+    "Bernardo Calandri":"19/12/1921 · fraz. S. Stefano",
+    "Caterina Borra":"10/9/1924 · Lequio",
+    "Luigi Mario Sarzotti":"11/9/1928 · fraz. Pra",
+    "Ottavia Manassero":"1935 · Bene Vagienna",
+    "Stefano Calandri":"26/11/1885 · † ~1965–70",
+    "Antonina Agnese Giubergia":"~1891–92",
+    "Giovanni Borra":"30/3/1896 · Lequio",
+    "Caterina Scapparone":"7/12/1899 · Bene Vagienna",
+    "Antonio Giusto Sarzotti":"13/12/1881 · fraz. Pra",
+    "Giovanna Dogliani":"4/8/1882 · Bene Vagienna",
+    "Bernardo Manassero":"27/9/1900 · † 28/1/1983",
+    "Pelagia Gerbaudo":"2/11/1902 · Narzole",
+    "Carlo Calandri":"~1848 · figlio di Bernardo",
+    "Maria Bruno":"27/8/1853 · figlia di Antonio",
+    "Lorenzo Giubergia":"~1840 · † prima del 1909",
+    "Domenica Deila":"~1866 · figlia di Antonio",
+    "Matteo Borra":"† prima del 1921",
+    "Caterina Masante (cognome incerto)":"viva nel 1921",
+    "Giovenale Scapparone":"vivo nel 1921",
+    "Antonia Botta":"viva nel 1921",
+    "Antonio Sarzotti":"† prima del 1905",
+    "Ottavia Fea":"† prima del 1905",
+    "Antonio Dogliani":"16/2/1844 · Narzole",
+    "Catterina Ferrero":"6/6/1854 · Fossano",
+    "Giacomo Manassero":"~1862 · figlio di Filippo",
+    "Ottavia Ferrero":"~1869 · figlia di Carlo",
+    "Pietro Gerbaudo":"vivo nel 1925",
+    "Maria Caterina Sarotto":"viva nel 1925"
+  };
+  var short={"Domenica (cognome incerto)":"Domenica ?","Caterina Masante (cognome incerto)":"Caterina Masante ?"};
+  var det=document.getElementById('det'), body=document.getElementById('detBody'), sel=null;
+  function open(html,el){body.innerHTML=html;det.classList.add('open');if(sel)sel.classList.remove('sel');sel=el;if(el&&el.classList.contains('p'))el.classList.add('sel');}
+  document.querySelector('#det .x').onclick=function(){det.classList.remove('open');if(sel)sel.classList.remove('sel');};
+  document.querySelectorAll('.tree .p').forEach(function(p){
+    var n=p.querySelector('.n'), name=n.textContent.trim();
+    var full='<h3>'+name+'</h3>'+[].slice.call(p.querySelectorAll('.d,.src,.note')).map(function(e){return e.outerHTML}).join('');
+    if(short[name]) n.textContent=short[name];
+    if(S[name]){var s=document.createElement('div');s.className='s';s.textContent=S[name];n.after(s);}
+    p.addEventListener('click',function(){open(full,p)});
+  });
+  document.querySelectorAll('.tree .mar').forEach(function(m){
+    var r=m.querySelector('.r'), title=r?r.textContent:'⚭', full='<h3>'+title+'</h3><div class="d">'+m.innerHTML.replace(/^[\s\S]*?<\/span>(<br>)?/,'')+'</div>';
+    var y=title.match(/\b(1[89]\d\d)\b/);
+    m.textContent=y?'⚭ '+y[1]:'⚭ ?';
+    m.title=title;
+    m.addEventListener('click',function(e){e.stopPropagation();open(full,null)});
+  });
+})();
+</script>
+</body>
+</html>
